@@ -117,8 +117,8 @@ textarea {
 .brand-logo img {
   display: block;
   width: auto;
-  height: 32px;
-  max-width: 140px;
+  height: 52px;
+  max-width: 180px;
   object-fit: contain;
 }
 
