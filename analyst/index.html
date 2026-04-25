@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OAM Analyst – Batch List</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="dashboard-topbar">
+    <div class="topbar-copy">
+      <h1>OAM Insight™</h1>
+      <p class="subtitle">Organizational Diagnostic Workspace</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Available Diagnostic Batches</h2>
+    <p class="section-subtext">
+      Browse all company assessments and open the relevant diagnostic dashboard.
+    </p>
+
+    <div class="filter-toolbar single-row-toolbar">
+      <div class="filter-group filter-search">
+        <label for="companySearch">Search</label>
+        <input type="text" id="companySearch" placeholder="Search company or division...">
+      </div>
+
+      <div class="filter-group compact-filter">
+        <label for="readinessFilter">Readiness</label>
+        <select id="readinessFilter">
+          <option value="all">All</option>
+          <option value="Insufficient Data">Insufficient Data</option>
+          <option value="Early Signal Only">Early Signal Only</option>
+          <option value="Ready for Analysis">Ready for Analysis</option>
+          <option value="High Confidence Sample">High Confidence Sample</option>
+        </select>
+      </div>
+
+      <div class="filter-group compact-filter">
+        <label for="sortBy">Sort By</label>
+        <select id="sortBy">
+          <option value="alphabetical">Alphabetical</option>
+          <option value="response_count">Response Count</option>
+          <option value="latest_entry">Latest Entry</option>
+          <option value="health_score">Health Score</option>
+        </select>
+      </div>
+
+      <div class="filter-group compact-filter">
+        <label for="sortOrder">Order</label>
+        <select id="sortOrder">
+          <option value="ascending">Ascending</option>
+          <option value="descending">Descending</option>
+        </select>
+      </div>
+
+      <div class="filter-group apply-filter-group">
+        <label>&nbsp;</label>
+        <button id="applyFiltersBtn" class="apply-filter-button">Apply</button>
+      </div>
+    </div>
+
+    <div id="batchGrid" class="batch-list-grid"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { fetchBatches, fetchBatchDetail } from "./js/api.js";
+
+let allBatches = [];
+
+function formatDate(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function parseDate(dateStr) {
+  if (!dateStr) return 0;
+  const d = new Date(dateStr);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+function formatLabel(value) {
+  if (!value) return "-";
+
+  const preservedAcronyms = new Set(["HR", "IT", "QA", "R&D", "CEO", "COO", "CFO", "CTO", "VP", "GM"]);
+
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map(word => {
+      const upper = word.toUpperCase();
+      if (preservedAcronyms.has(upper)) return upper;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+function getResponseStatus(responseCount) {
+  const count = Number(responseCount || 0);
+
+  if (count < 8) {
+    return { label: "Insufficient Data", className: "status-insufficient" };
+  }
+  if (count <= 14) {
+    return { label: "Early Signal Only", className: "status-weak" };
+  }
+  if (count <= 29) {
+    return { label: "Ready for Analysis", className: "status-stable" };
+  }
+  return { label: "High Confidence Sample", className: "status-strong" };
+}
+
+function getHealthStatus(avgScore) {
+  const score = Number(avgScore || 0);
+
+  if (!score) {
+    return { label: "Not Calculated", className: "status-insufficient" };
+  }
+  if (score < 2.0) {
+    return { label: "Fragile", className: "status-critical" };
+  }
+  if (score <= 2.7) {
+    return { label: "Developing", className: "status-weak" };
+  }
+  if (score <= 3.4) {
+    return { label: "Stable", className: "status-stable" };
+  }
+  return { label: "Performing", className: "status-strong" };
+}
+
+function getBatchLatestEntry(batch) {
+  return parseDate(batch.lastSubmittedAt || batch.firstSubmittedAt);
+}
+
+function calculateBatchHealth(submissions) {
+  if (!submissions || !submissions.length) {
+    return {
+      overallScore: 0,
+      topIssueCode: "-",
+      topIssueLabel: "No data"
+    };
+  }
+
+  const driverTotals = {};
+  const driverCounts = {};
+
+  submissions.forEach(submission => {
+    const driverScores = submission.driverScores || {};
+    Object.entries(driverScores).forEach(([key, value]) => {
+      const score = Number(value);
+      if (!Number.isFinite(score)) return;
+
+      driverTotals[key] = (driverTotals[key] || 0) + score;
+      driverCounts[key] = (driverCounts[key] || 0) + 1;
+    });
+  });
+
+  const averagedDrivers = Object.keys(driverTotals).map(key => ({
+    id: key,
+    score: driverTotals[key] / driverCounts[key]
+  }));
+
+  const overallScore =
+    averagedDrivers.reduce((sum, item) => sum + item.score, 0) /
+    (averagedDrivers.length || 1);
+
+  const weakestDriver = [...averagedDrivers].sort((a, b) => a.score - b.score)[0];
+
+  const driverNameMap = {
+    D1: "Vision & Direction Clarity",
+    D2: "Strategy & Priority to Team Alignment",
+    D3: "Leadership Alignment & Consistency",
+    D4: "Role & Responsibility Clarity",
+    D5: "Decision Making Effectiveness",
+    D6: "Management System Alignment & KPI Clarity",
+    D7: "Performance & Accountability",
+    D8: "Communication Flow",
+    D9: "Cross-Team Collaboration",
+    D10: "Capability & Skill Readiness",
+    D11: "Ownership & Initiative",
+    D12: "Feedback & Continuous Learning"
+  };
+
+  return {
+    overallScore: Number(overallScore.toFixed(2)),
+    topIssueCode: weakestDriver?.id || "-",
+    topIssueLabel: driverNameMap[weakestDriver?.id] || "No data"
+  };
+}
+
+async function enrichBatchesWithHealth(batches) {
+  const enriched = await Promise.all(
+    batches.map(async batch => {
+      try {
+        const detail = await fetchBatchDetail(batch.surveyBatchId);
+        const submissions = detail.submissions || [];
+        const health = calculateBatchHealth(submissions);
+
+        return {
+          ...batch,
+          healthScore: health.overallScore,
+          topIssueCode: health.topIssueCode,
+          topIssueLabel: health.topIssueLabel
+        };
+      } catch (error) {
+        return {
+          ...batch,
+          healthScore: 0,
+          topIssueCode: "-",
+          topIssueLabel: "Unavailable"
+        };
+      }
+    })
+  );
+
+  return enriched;
+}
+
+function sortBatches(batches, sortBy, sortOrder) {
+  const multiplier = sortOrder === "descending" ? -1 : 1;
+  const sorted = [...batches];
+
+  sorted.sort((a, b) => {
+    if (sortBy === "alphabetical") {
+      const aKey = `${formatLabel(a.organizationName || "")} ${formatLabel(a.divisionName || "")}`;
+      const bKey = `${formatLabel(b.organizationName || "")} ${formatLabel(b.divisionName || "")}`;
+      return aKey.localeCompare(bKey) * multiplier;
+    }
+
+    if (sortBy === "response_count") {
+      return (Number(a.responseCount || 0) - Number(b.responseCount || 0)) * multiplier;
+    }
+
+    if (sortBy === "latest_entry") {
+      return (getBatchLatestEntry(a) - getBatchLatestEntry(b)) * multiplier;
+    }
+
+    if (sortBy === "health_score") {
+      return (Number(a.healthScore || 999) - Number(b.healthScore || 999)) * multiplier;
+    }
+
+    return 0;
+  });
+
+  return sorted;
+}
+
+function createBatchCard(batch) {
+  const readiness = getResponseStatus(batch.responseCount);
+  const health = getHealthStatus(batch.healthScore);
+
+  const firstDate = formatDate(batch.firstSubmittedAt);
+  const lastDate = formatDate(batch.lastSubmittedAt);
+
+  const dateRange =
+    firstDate === "-" && lastDate === "-"
+      ? "-"
+      : firstDate === lastDate
+      ? firstDate
+      : `${firstDate} → ${lastDate}`;
+
+  const card = document.createElement("div");
+  card.className = "batch-list-card";
+
+  card.innerHTML = `
+    <div class="batch-list-card-header">
+      <div class="batch-list-company">${formatLabel(batch.organizationName || "Unknown Organization")}</div>
+      <div class="batch-list-division">${formatLabel(batch.divisionName || "General")}</div>
+    </div>
+
+    <div class="card-chip-row">
+      <span class="score-chip ${readiness.className}">${readiness.label}</span>
+      <span class="score-chip ${health.className}">${health.label}</span>
+    </div>
+
+    <div class="batch-list-meta">
+      <div class="meta-line">
+        <span class="meta-key">Responses</span>
+        <span class="meta-value">${batch.responseCount ?? 0}</span>
+      </div>
+      <div class="meta-line">
+        <span class="meta-key">Health</span>
+        <span class="meta-value">${batch.healthScore ? batch.healthScore.toFixed(2) : "-"}</span>
+      </div>
+      <div class="meta-line">
+        <span class="meta-key">Top Issue</span>
+        <span class="meta-value">${batch.topIssueCode} · ${batch.topIssueLabel}</span>
+      </div>
+      <div class="meta-line">
+        <span class="meta-key">Date Range</span>
+        <span class="meta-value">${dateRange}</span>
+      </div>
+      <div class="meta-line">
+        <span class="meta-key">Batch ID</span>
+        <span class="meta-value">${batch.surveyBatchId || "-"}</span>
+      </div>
+    </div>
+
+    <div class="card-footer-row">
+      <button class="open-button" data-batch="${batch.surveyBatchId}">Open Dashboard</button>
+    </div>
+  `;
+
+  const button = card.querySelector(".open-button");
+  button.addEventListener("click", () => {
+    window.location.href = `batch.html?batch=${batch.surveyBatchId}`;
+  });
+
+  return card;
+}
+
+function renderBatchGrid(batches, sortBy, sortOrder) {
+  const container = document.getElementById("batchGrid");
+  container.innerHTML = "";
+
+  if (!batches.length) {
+    container.innerHTML = `<div class="empty-state">No batches match the current filter.</div>`;
+    return;
+  }
+
+  const sorted = sortBatches(batches, sortBy, sortOrder);
+  sorted.forEach(batch => {
+    container.appendChild(createBatchCard(batch));
+  });
+}
+
+function applyFilters() {
+  const searchValue = document.getElementById("companySearch").value.trim().toLowerCase();
+  const readinessValue = document.getElementById("readinessFilter").value;
+  const sortBy = document.getElementById("sortBy").value;
+  const sortOrder = document.getElementById("sortOrder").value;
+
+  let filtered = [...allBatches];
+
+  if (searchValue) {
+    filtered = filtered.filter(batch => {
+      const company = formatLabel(batch.organizationName || "").toLowerCase();
+      const division = formatLabel(batch.divisionName || "").toLowerCase();
+      return company.includes(searchValue) || division.includes(searchValue);
+    });
+  }
+
+  if (readinessValue !== "all") {
+    filtered = filtered.filter(batch => {
+      const status = getResponseStatus(batch.responseCount);
+      return status.label === readinessValue;
+    });
+  }
+
+  renderBatchGrid(filtered, sortBy, sortOrder);
+}
+
+async function loadBatches() {
+  const data = await fetchBatches();
+  const rawBatches = data.batches || [];
+
+  document.getElementById("batchGrid").innerHTML = `
+    <div class="empty-state">Loading batch health summary...</div>
+  `;
+
+  allBatches = await enrichBatchesWithHealth(rawBatches);
+
+  applyFilters();
+
+  document.getElementById("applyFiltersBtn").addEventListener("click", applyFilters);
+
+  let searchTimeout;
+  document.getElementById("companySearch").addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      applyFilters();
+    }, 250);
+  });
+}
+
+loadBatches();
+</script>
+
+</body>
+</html>

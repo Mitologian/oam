@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OAM Insight™ – Organizational Alignment Health Scan</title>
+
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand-mark">OAM</div>
+      <div class="header-copy">
+        <h1>Ansaka Consulting</h1>
+        <h2>OAM Insight™ – Organizational Alignment Health Scan</h2>
+        <p class="subtitle">Survey internal singkat untuk memahami bagaimana pekerjaan berjalan dalam praktik sehari-hari.</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- INTRO -->
+    <section id="introSection" class="section">
+      <div class="container">
+        <div class="hero card">
+          <div class="hero-meta">Diagnostic Survey</div>
+          <h3>Organizational Alignment Survey</h3>
+          <p>
+            Survey ini dirancang untuk memahami kondisi kerja yang nyata berdasarkan pengalaman Anda di lapangan.
+          </p>
+          <p style="margin-top: 12px;">
+            Tidak ada jawaban benar atau salah. Survey ini bukan untuk menilai individu, melainkan untuk membantu melihat pola kerja, hambatan, dan area yang mungkin perlu diperbaiki di dalam organisasi.
+          </p>
+          <p style="margin-top: 12px;">
+            Masukan yang jujur akan sangat membantu memberikan gambaran yang lebih akurat mengenai apa yang benar-benar terjadi dalam pekerjaan sehari-hari.
+          </p>
+
+          <div class="info-grid">
+            <div class="mini-card">
+              <div class="mini-title">Mengapa Survey Ini Penting</div>
+              <div class="mini-body">
+                Tidak semua tantangan kerja terlihat dari laporan atau angka kinerja saja.
+                Survey ini membantu menangkap kondisi nyata, seperti area yang terasa kurang jelas,
+                kurang efisien, atau kurang selaras dalam pelaksanaan kerja sehari-hari.
+              </div>
+            </div>
+
+            <div class="mini-card">
+              <div class="mini-title">Peran Anda Dalam Survey Ini</div>
+              <div class="mini-body">
+                Jawablah berdasarkan pengalaman kerja Anda yang sebenarnya.
+                Tidak perlu menebak jawaban yang dianggap paling aman atau paling diharapkan.
+                Jawaban yang paling membantu adalah jawaban yang jujur, realistis, dan sesuai kondisi yang paling sering Anda alami.
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <button id="startBtn" class="btn primary">Mulai Survey</button>
+          </div>
+
+          <p class="muted" style="margin-top: 14px;">
+            Seluruh respons bersifat rahasia dan digunakan hanya untuk kepentingan perbaikan organisasi.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTRUCTION MODAL -->
+    <div id="instructionModal">
+      <div class="modal-panel">
+        <h3>Petunjuk Pengisian Survey</h3>
+
+        <p>
+          Survey ini bersifat rahasia dan tidak digunakan untuk menilai kinerja individu.
+        </p>
+
+        <p>
+          Jawaban Anda akan digabungkan dengan jawaban responden lain dan dianalisis pada tingkat kelompok atau organisasi, bukan secara personal.
+        </p>
+
+        <p>
+          Mohon jawab berdasarkan pengalaman Anda yang sebenarnya dalam pekerjaan sehari-hari, bukan berdasarkan kondisi yang seharusnya terjadi atau jawaban yang menurut Anda paling diharapkan.
+        </p>
+
+        <p>
+          Jika ada hal yang terasa kurang jelas, kurang konsisten, atau kurang berjalan baik dalam kenyataan kerja sehari-hari, hal tersebut boleh dan wajar untuk tercermin dalam jawaban Anda.
+        </p>
+
+        <p>
+          Perbedaan pandangan antar individu atau antar peran adalah hal yang normal. Justru masukan yang jujur dan beragam akan membantu memberikan gambaran yang lebih akurat mengenai kondisi organisasi saat ini.
+        </p>
+
+        <ul>
+          <li>Tidak ada jawaban benar atau salah.</li>
+          <li>Survey ini bukan alat untuk menghakimi individu.</li>
+          <li>Jawaban yang jujur adalah bagian paling penting dari proses ini.</li>
+          <li>Mohon jawab sesuai kondisi yang paling sering Anda alami.</li>
+        </ul>
+
+        <button id="closeInstructionModal" class="btn primary modal-cta">
+          Mulai Survey
+        </button>
+      </div>
+    </div>
+
+    <!-- SURVEY -->
+    <section id="surveySection" class="section" style="display:none;">
+      <div class="container survey-shell">
+        <div class="topline">
+          <div class="progress-wrap">
+            <div class="progress-label-row">
+              <div class="progress-label">Progress Pengisian</div>
+              <div class="progress-value"><span id="progressText">0%</span> completed</div>
+            </div>
+
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="nav-buttons">
+            <button id="prevBtn" class="btn">Back</button>
+            <button id="nextBtn" class="btn primary">Next</button>
+          </div>
+        </div>
+
+        <div id="pagesRoot"></div>
+
+        <div class="bottom-nav">
+          <div class="nav-buttons bottom">
+            <button id="prevBtnBottom" class="btn">Back</button>
+            <button id="nextBtnBottom" class="btn primary">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THANK YOU -->
+    <section id="thanksSection" class="section" style="display:none;">
+      <div class="container">
+        <div class="card thanks-card">
+          <div class="thanks-icon">✓</div>
+          <h3>Terima kasih.</h3>
+          <p>
+            Respons Anda telah berhasil dikirim.
+          </p>
+          <p class="muted">
+            Masukan Anda akan digabungkan dengan respons lainnya untuk membantu memahami kondisi kerja secara lebih utuh dan mendukung perbaikan organisasi ke depan.
+          </p>
+
+          <div id="submitNote" class="success-note" style="margin-top: 14px;"></div>
+
+          <div class="thanks-actions">
+            <button id="restartBtn" class="btn">Isi Survey Baru</button>
+          </div>
+
+          <!-- Hidden debug elements: DO NOT REMOVE -->
+          <div style="display:none !important;" aria-hidden="true">
+            <div class="question-card debug-card">
+              <div class="debug-header">
+                <div class="q-title">Debug Output Sementara</div>
+              </div>
+              <pre id="debugOutput"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- External JS -->
+  <script src="script.js"></script>
+</body>
+</html>

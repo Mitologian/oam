@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OAM Analyst Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="dashboard-topbar">
+    <div class="topbar-copy">
+      <h1 id="companyName">OAM Insight™</h1>
+      <p class="subtitle">
+        <strong>Division:</strong> <span id="divisionName">-</span> ·
+        <strong>Batch:</strong> <span id="batchId">-</span> ·
+        <strong>Responses:</strong> <span id="responseCount">0</span>
+      </p>
+    </div>
+
+    <div class="topbar-actions">
+      <a href="./index.html" class="back-button">← Back to Batch List</a>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-card kpi-card-red">
+      <div class="kpi-label">Responses</div>
+      <div id="kpiResponses" class="kpi-value">0</div>
+      <div class="kpi-meta">Sample size collected for this batch.</div>
+    </div>
+
+    <div class="kpi-card kpi-card-orange">
+      <div class="kpi-label">Readiness</div>
+      <div id="kpiReadiness" class="kpi-value kpi-value-sm">-</div>
+      <div class="kpi-meta">Confidence level for interpreting results.</div>
+    </div>
+
+    <div class="kpi-card kpi-card-blue">
+      <div class="kpi-label">Health Score</div>
+      <div id="kpiHealthScore" class="kpi-value">-</div>
+      <div class="kpi-meta">Overall organizational diagnostic health.</div>
+    </div>
+
+    <div class="kpi-card kpi-card-purple">
+      <div class="kpi-label">Dominant Layer</div>
+      <div id="kpiLayer" class="kpi-value kpi-value-sm">-</div>
+      <div class="kpi-meta">Most likely concentration area of the issue.</div>
+    </div>
+  </div>
+
+  <div class="section section-executive">
+    <h2>Main Problem</h2>
+    <p class="section-subtext">
+      Where the organization is currently underperforming most.
+    </p>
+
+    <div class="executive-v2-grid">
+      <div class="executive-primary-card">
+        <div class="executive-label">Primary Problem</div>
+        <div id="primaryProblem"></div>
+        <div id="primaryProblemMeta" class="executive-meta-row"></div>
+        <p id="primaryProblemMini" class="executive-summary-text"></p>
+      </div>
+
+      <div class="executive-side-stack">
+        <div class="executive-side-card card-layer">
+          <div class="executive-label">Dominant Layer</div>
+          <div id="dominantLayer" class="executive-side-title"></div>
+          <p id="dominantLayerReason" class="executive-summary-text"></p>
+        </div>
+
+        <div class="executive-side-card card-gap">
+          <div class="executive-label">Likely Root Pattern</div>
+          <div id="dominantGap"></div>
+          <div id="dominantGapMeta" class="executive-meta-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="executive-support-section card-driver">
+      <div class="executive-label">Also Weak</div>
+      <ul id="supportingDrivers" class="executive-top3-list"></ul>
+    </div>
+  </div>
+
+  <div class="section section-why">
+    <h2>Why It Happens</h2>
+    <p class="section-subtext">
+      What is most likely causing the problem beneath the surface.
+    </p>
+    <p id="why" class="highlight"></p>
+  </div>
+
+  <div class="section section-actions">
+    <h2>Recommended Actions</h2>
+    <p class="section-subtext">
+      Where intervention should be focused first.
+    </p>
+    <ul id="actions"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Visual Analysis</h2>
+    <p class="section-subtext">
+      High-level visual view of sample strength, driver pattern, gap pattern, and layer concentration.
+    </p>
+
+    <div class="analysis-grid analysis-grid-rebalanced">
+      <div class="analysis-column">
+        <div class="analysis-card card-driver">
+          <div class="analysis-card-header">
+            <h3>Driver Health Matrix</h3>
+            <p>All 12 drivers with traffic-light status.</p>
+          </div>
+          <div id="driverMatrix" class="driver-matrix driver-matrix-4x3"></div>
+        </div>
+
+        <div class="analysis-card card-neutral analysis-card-compact">
+          <div class="analysis-card-header">
+            <h3>Response Confidence</h3>
+            <p>Confidence level based on total responses collected.</p>
+          </div>
+
+          <div id="responseConfidenceMeter" class="confidence-meter-wrap">
+            <div class="confidence-status" id="confidenceStatusLabel">Awaiting data</div>
+
+            <div class="confidence-scale">
+              <div id="confidenceFill" class="confidence-fill" style="width: 0%;"></div>
+            </div>
+
+            <div class="confidence-label-row">
+              <span>Low</span>
+              <span>Moderate</span>
+              <span>High</span>
+            </div>
+
+            <div class="confidence-help">
+              Suggested interpretation confidence based on current sample volume.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysis-column">
+        <div class="analysis-card card-gap">
+          <div class="analysis-card-header">
+            <h3>Gap Pattern</h3>
+            <p>All gap hypotheses in framework order.</p>
+          </div>
+          <div class="chart-placeholder compact-chart">
+            <canvas id="gapPatternChart"></canvas>
+            <div class="chart-placeholder-note">
+              Gap pattern visual will appear here after JS binding is connected.
+            </div>
+          </div>
+        </div>
+
+        <div class="analysis-card card-layer">
+          <div class="analysis-card-header">
+            <h3>Layer Concentration</h3>
+            <p>All 5 layers in framework order.</p>
+          </div>
+          <div class="chart-placeholder compact-chart">
+            <canvas id="layerConcentrationChart"></canvas>
+            <div class="chart-placeholder-note">
+              Layer concentration will appear here after JS binding is connected.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Diagnostic Rankings</h2>
+    <p class="section-subtext">
+      This section separates symptom visibility, operational breakdown, systemic hypothesis, and problem concentration.
+    </p>
+
+    <div class="mini-grid">
+      <div class="mini-card card-driver">
+        <h3>Weakest Drivers</h3>
+        <p class="card-subtext">
+          <strong>Where the problem shows up most clearly in day-to-day execution.</strong><br>
+          These are the organizational areas where weakness is currently most visible based on aggregated driver scores.
+        </p>
+        <ul id="weakestDrivers"></ul>
+      </div>
+
+      <div class="mini-card card-fp">
+        <h3>Weakest Failure Points</h3>
+        <p class="card-subtext">
+          <strong>What exactly is breaking down inside the system.</strong><br>
+          These are the most fragile operational breakdown points behind the weaker drivers.
+        </p>
+        <ul id="weakestFPs"></ul>
+      </div>
+
+      <div class="mini-card card-gap">
+        <h3>Preliminary Gap Pattern</h3>
+        <p class="card-subtext">
+          <strong>What type of systemic issue is likely driving the problem.</strong><br>
+          This is an early hypothesis and should be validated through deeper diagnosis.
+        </p>
+        <ul id="weakestGaps"></ul>
+      </div>
+
+      <div class="mini-card card-layer">
+        <h3>Likely Problem Layer</h3>
+        <p class="card-subtext">
+          <strong>Where the problem is most concentrated in the organization.</strong><br>
+          This layer is inferred from the weakest main drivers, not from gap score alone.
+        </p>
+        <p id="likelyLayer" class="highlight"></p>
+        <p id="likelyLayerReason" class="explain-note"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Causal Chain Intelligence</h2>
+    <p class="section-subtext">
+      <strong>How the problem is likely unfolding across the organization.</strong><br>
+      These chains suggest how weaknesses may be linked across drivers.
+    </p>
+
+    <div class="info-note">
+      <strong>Important:</strong>
+      Driver / FP / gap scores indicate weakness severity.
+      Chain confidence indicates how strongly the current pattern matches a known causal chain.
+      <br>
+      <strong>Low</strong> = weak pattern match,
+      <strong>Medium</strong> = moderate pattern match,
+      <strong>High</strong> = strong pattern match.
+    </div>
+
+    <div id="causalChains" class="chain-grid"></div>
+  </div>
+
+  <div class="section section-open-responses">
+    <h2>Open Responses</h2>
+    <p class="section-subtext">
+      Review qualitative comments grouped by driver. Only non-empty responses are shown.
+    </p>
+
+    <div class="open-response-toggle-row">
+      <button id="openResponsesToggle" class="toggle-explorer-button">
+        Open Response Explorer
+      </button>
+    </div>
+
+    <div id="openResponsesExplorer" class="open-responses-shell" style="display:none;">
+      <div id="openResponsesContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
